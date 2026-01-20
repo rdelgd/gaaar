@@ -15,6 +15,16 @@ import "dotenv/config";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function resolveSpecPath(specPath, fallbackDir) {
+  const direct = path.resolve(specPath);
+  if (fs.existsSync(direct)) return direct;
+  if (!path.isAbsolute(specPath)) {
+    const fallback = path.resolve(fallbackDir, specPath);
+    if (fs.existsSync(fallback)) return fallback;
+  }
+  return direct;
+}
+
 const program = new Command();
 program
   .name("gaaar")
@@ -32,10 +42,13 @@ program
     "GA4 property ID (e.g., properties/123456789)",
     process.env.GA4_PROPERTY_ID
   )
-  .requiredOption("-s, --spec <path>", "Path to admin spec JSON file")
+  .requiredOption(
+    "-s, --spec <path>",
+    "Path to admin spec JSON file (defaults to config/ when relative)"
+  )
   .action(async (opts) => {
     const PROPERTY_ID = opts.property || process.env.GA4_PROPERTY_ID;
-    const SPEC_PATH = path.resolve(opts.spec);
+    const SPEC_PATH = resolveSpecPath(opts.spec, "config");
 
     if (!fs.existsSync(SPEC_PATH)) {
       console.error("Spec file not found:", SPEC_PATH);
@@ -362,7 +375,10 @@ function printCustomMetrics(metrics) {
 program
   .command("reports")
   .description("Run GA4 Data API reports from a JSON spec (everything-as-code)")
-  .requiredOption("-s, --spec <path>", "Path to report spec JSON")
+  .requiredOption(
+    "-s, --spec <path>",
+    "Path to report spec JSON (defaults to specs/ when relative)"
+  )
   .option(
     "-p, --property <propertyId>",
     "GA4 property (e.g., properties/123456789)",
@@ -371,7 +387,7 @@ program
   .option("-f, --format <fmt>", "csv|json|ndjson|table", "table")
   .option("-o, --out <path>", "Write output to file instead of stdout")
   .action(async (opts) => {
-    const SPEC_PATH = path.resolve(opts.spec);
+    const SPEC_PATH = resolveSpecPath(opts.spec, "specs");
     if (!fs.existsSync(SPEC_PATH)) {
       console.error("Spec file not found:", SPEC_PATH);
       process.exit(1);
@@ -625,7 +641,10 @@ program
     "--dataset <dataset>",
     "BigQuery dataset name (e.g., ga4_export)"
   )
-  .option("--sql <path>", "Path to .sql file to run") // one of --sql or --query
+  .option(
+    "--sql <path>",
+    "Path to .sql file to run (defaults to sql/ when relative)"
+  ) // one of --sql or --query
   .option("--query <text>", "Inline SQL to run") // one of --sql or --query
   .option(
     "--dest <table>",
@@ -660,9 +679,15 @@ program
     const bigquery = new BigQuery({ projectId: opts.project });
 
     // --- read SQL
-    let sql =
-      opts.query ??
-      (await fs.promises.readFile(path.resolve(opts.sql), "utf8"));
+    let sql = opts.query;
+    if (!sql) {
+      const SQL_PATH = resolveSpecPath(opts.sql, "sql");
+      if (!fs.existsSync(SQL_PATH)) {
+        console.error("SQL file not found:", SQL_PATH);
+        process.exit(1);
+      }
+      sql = await fs.promises.readFile(SQL_PATH, "utf8");
+    }
 
     // --- perform template substitution for {{project}} and {{dataset}}
     sql = sql.replace(/\{\{project\}\}/g, opts.project);

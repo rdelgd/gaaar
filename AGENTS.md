@@ -67,6 +67,7 @@ node index.mjs admin -p properties/123456789 -s config/channel_group.json
 
 Notes:
 - The AI channel specs now live in `config/channel_group.json`.
+- If `--spec` is a relative path, the CLI defaults to looking in `config/`.
 
 ## 2) reports
 
@@ -97,6 +98,7 @@ node index.mjs reports -s specs/weekly_kpis.json -p properties/123456789 -f csv 
 ```
 
 Tip: If `property` is present in the spec JSON, you can omit `-p`.
+If `--spec` is a relative path, the CLI defaults to looking in `specs/`.
 
 ## 3) bq
 
@@ -130,6 +132,7 @@ Example:
 ```bash
 node index.mjs bq --project my-proj --dataset ga4_export --sql sql/ai_sources_daily.sql --from 2025-09-01 --to 2025-09-21 --dest my_temp.table_name
 ```
+If `--sql` is a relative path, the CLI defaults to looking in `sql/`.
 
 ## Environment and auth
 
@@ -166,4 +169,3 @@ Small improvements you can contribute:
 - `index.mjs` — CLI and implementation.
 - `specs/` — JSON report specs used by the `reports` command.
 - `sql/` — example SQL used by the `bq` command.
-

@@ -26,12 +26,16 @@ gaaar admin --property properties/123456789 --spec config/channel_group.json
 # Use short flags
 gaaar admin -p properties/123456789 -s config/channel_group.json
 
+# Relative path defaults to config/
+gaaar admin -p properties/123456789 -s channel_group_update.json
+
 # Use environment variable
 export GA4_PROPERTY_ID="properties/123456789"
 gaaar admin -s config/channel_group.json
 ```
 
 The tool will only add channels that don't already exist in your target channel group.
+If you pass a relative `--spec` path, it will look in `config/` by default.
 
 ### Reports
 
@@ -44,6 +48,9 @@ gaaar reports --help
 # Run a report from a spec file
 gaaar reports --spec specs/weekly_kpis.json
 
+# Relative path defaults to specs/
+gaaar reports -s weekly_kpis.json
+
 # Specify property (overrides spec and env var)
 gaaar reports -s specs/weekly_kpis.json -p properties/123456789
 
@@ -53,6 +60,8 @@ gaaar reports -s specs/weekly_kpis.json -f csv
 # Save output to file
 gaaar reports -s specs/weekly_kpis.json -f csv -o reports/weekly_kpis.csv
 ```
+
+If you pass a relative `--spec` path, it will look in `specs/` by default.
 
 #### Report example:
 
@@ -99,6 +108,8 @@ gaaar bq --project my-project --dataset ga4_export --sql sql/ai_sources_daily.sq
 # Dry run to estimate query cost
 gaaar bq --project my-project --dataset ga4_export --sql sql/ai_sources_daily.sql --dry-run
 ```
+
+If you pass a relative `--sql` path, it will look in `sql/` by default.
 
 #### SQL Template Features
 
