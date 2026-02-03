@@ -110,8 +110,6 @@ gaaar bq --project my-project --dataset ga4_export --sql ai_sources_daily.sql --
 gaaar bq --project my-project --dataset ga4_export --sql ai_sources_daily.sql --dry-run
 ```
 
-If you pass a relative `--sql` path, it will look in `sql/` by default.
-
 #### SQL Template Features
 
 **Project & Dataset Substitution** - Use `{{project}}` and `{{dataset}}` placeholders in your SQL:
