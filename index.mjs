@@ -28,7 +28,7 @@ function resolveSpecPath(specPath, fallbackDir) {
 const program = new Command();
 program
   .name("gaaar")
-  .description("GA4 Admin + Data CLI: channel groups & programmatic reports")
+  .description("GA4 Admin, Report and Query CLI tool")
   .version("0.1.0");
 
 /* -----------------------------------------------------------------------------
@@ -40,11 +40,11 @@ program
   .requiredOption(
     "-p, --property <propertyId>",
     "GA4 property ID (e.g., properties/123456789)",
-    process.env.GA4_PROPERTY_ID
+    process.env.GA4_PROPERTY_ID,
   )
   .requiredOption(
     "-s, --spec <path>",
-    "Path to admin spec JSON file (defaults to config/ when relative)"
+    "Path to admin spec JSON file (defaults to config/ when relative)",
   )
   .action(async (opts) => {
     const PROPERTY_ID = opts.property || process.env.GA4_PROPERTY_ID;
@@ -58,14 +58,14 @@ program
 
     if (!PROPERTY_ID) {
       console.error(
-        "Missing GA4 property id. Use --property=properties/123456789 or set GA4_PROPERTY_ID."
+        "Missing GA4 property id. Use --property=properties/123456789 or set GA4_PROPERTY_ID.",
       );
       process.exit(1);
     }
     if (!PROPERTY_ID.startsWith("properties/")) {
       console.error(
         "GA4 property id must look like 'properties/123456789'. Got:",
-        PROPERTY_ID
+        PROPERTY_ID,
       );
       process.exit(1);
     }
@@ -74,7 +74,7 @@ program
       const { resourceType, action, ...config } = spec;
       if (!resourceType || !action) {
         throw new Error(
-          'Spec file must contain "resourceType" and "action" fields.'
+          'Spec file must contain "resourceType" and "action" fields.',
         );
       }
       switch (resourceType) {
@@ -98,7 +98,7 @@ program
       if (err?.response?.data) {
         console.error(
           "Response data:",
-          JSON.stringify(err.response.data, null, 2)
+          JSON.stringify(err.response.data, null, 2),
         );
       }
       process.exit(1);
@@ -153,7 +153,7 @@ async function findTargetChannelGroup(propertyId, targetGroupDisplayName) {
     (g) =>
       !g.systemDefined &&
       (g.displayName || "").toLowerCase() ===
-        targetGroupDisplayName.toLowerCase()
+        targetGroupDisplayName.toLowerCase(),
   );
 }
 
@@ -175,16 +175,16 @@ async function handleChannelGroup(propertyId, action, config) {
 async function updateChannelGroup(propertyId, spec) {
   const targetGroupDisplayName = (spec.displayName || "").trim();
   console.log(
-    `\n→ Property: ${propertyId}\n→ Channel Group: "${targetGroupDisplayName}"\n`
+    `\n→ Property: ${propertyId}\n→ Channel Group: "${targetGroupDisplayName}"\n`,
   );
 
   const target = await findTargetChannelGroup(
     propertyId,
-    targetGroupDisplayName
+    targetGroupDisplayName,
   );
   if (!target) {
     throw new Error(
-      `Channel Group "${targetGroupDisplayName}" not found (or it's system-defined) on ${propertyId}.`
+      `Channel Group "${targetGroupDisplayName}" not found (or it's system-defined) on ${propertyId}.`,
     );
   }
 
@@ -192,12 +192,12 @@ async function updateChannelGroup(propertyId, spec) {
   const desiredRules = (spec.rules || []).map(buildGroupingRule);
 
   const toAdd = desiredRules.filter(
-    (spec) => !hasRuleByDisplayName(currentRules, spec.displayName)
+    (spec) => !hasRuleByDisplayName(currentRules, spec.displayName),
   );
 
   if (toAdd.length === 0) {
     console.log(
-      `No changes: all specified channels already exist in "${target.displayName}".`
+      `No changes: all specified channels already exist in "${target.displayName}".`,
     );
     return;
   }
@@ -216,7 +216,9 @@ async function updateChannelGroup(propertyId, spec) {
 async function handleGoogleAdsLinks(propertyId, action, config) {
   switch (action) {
     case "list":
-      const [links] = await adminClient.listGoogleAdsLinks({ parent: propertyId });
+      const [links] = await adminClient.listGoogleAdsLinks({
+        parent: propertyId,
+      });
       printGoogleAdsLinks(links);
       break;
     default:
@@ -231,26 +233,26 @@ function printGoogleAdsLinks(links) {
   }
 
   const cols = ["Customer ID", "Can Manage Clients", "Creator Email"];
-  const rows = links.map(link => [
+  const rows = links.map((link) => [
     link.adsPersonalizationEnabled,
     link.canManageClients,
     link.creatorEmailAddress,
   ]);
 
   const widths = cols.map((c, i) =>
-    Math.max(c.length, ...rows.map(row => String(row[i] ?? "").length), 6)
+    Math.max(c.length, ...rows.map((row) => String(row[i] ?? "").length), 6),
   );
   const pad = (str, n) => String(str ?? "").padEnd(n, " ");
-  const sep = "+" + widths.map(w => "-".repeat(w + 2)).join("+") + "+";
+  const sep = "+" + widths.map((w) => "-".repeat(w + 2)).join("+") + "+";
 
   console.log(sep);
   console.log(
-    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|"
+    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|",
   );
   console.log(sep);
   for (const r of rows) {
     console.log(
-      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|"
+      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|",
     );
   }
   console.log(sep);
@@ -259,13 +261,17 @@ function printGoogleAdsLinks(links) {
 async function handleCustomDimensions(propertyId, action, config) {
   switch (action) {
     case "list":
-      const [dimensions] = await adminClient.listCustomDimensions({ parent: propertyId });
+      const [dimensions] = await adminClient.listCustomDimensions({
+        parent: propertyId,
+      });
       printCustomDimensions(dimensions);
       break;
     case "create":
       const { dimension } = config;
       if (!dimension) {
-        throw new Error('Spec for creating custom dimension must contain a "dimension" field.');
+        throw new Error(
+          'Spec for creating custom dimension must contain a "dimension" field.',
+        );
       }
       const [createdDimension] = await adminClient.createCustomDimension({
         parent: propertyId,
@@ -286,7 +292,7 @@ function printCustomDimensions(dimensions) {
   }
 
   const cols = ["Name", "Parameter Name", "Scope", "Description"];
-  const rows = dimensions.map(dim => [
+  const rows = dimensions.map((dim) => [
     dim.name,
     dim.parameterName,
     dim.scope,
@@ -294,19 +300,19 @@ function printCustomDimensions(dimensions) {
   ]);
 
   const widths = cols.map((c, i) =>
-    Math.max(c.length, ...rows.map(row => String(row[i] ?? "").length), 6)
+    Math.max(c.length, ...rows.map((row) => String(row[i] ?? "").length), 6),
   );
   const pad = (str, n) => String(str ?? "").padEnd(n, " ");
-  const sep = "+" + widths.map(w => "-".repeat(w + 2)).join("+") + "+";
+  const sep = "+" + widths.map((w) => "-".repeat(w + 2)).join("+") + "+";
 
   console.log(sep);
   console.log(
-    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|"
+    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|",
   );
   console.log(sep);
   for (const r of rows) {
     console.log(
-      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|"
+      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|",
     );
   }
   console.log(sep);
@@ -315,13 +321,17 @@ function printCustomDimensions(dimensions) {
 async function handleCustomMetrics(propertyId, action, config) {
   switch (action) {
     case "list":
-      const [metrics] = await adminClient.listCustomMetrics({ parent: propertyId });
+      const [metrics] = await adminClient.listCustomMetrics({
+        parent: propertyId,
+      });
       printCustomMetrics(metrics);
       break;
     case "create":
       const { metric } = config;
       if (!metric) {
-        throw new Error('Spec for creating custom metric must contain a "metric" field.');
+        throw new Error(
+          'Spec for creating custom metric must contain a "metric" field.',
+        );
       }
       const [createdMetric] = await adminClient.createCustomMetric({
         parent: propertyId,
@@ -342,7 +352,7 @@ function printCustomMetrics(metrics) {
   }
 
   const cols = ["Name", "Parameter Name", "Measurement Unit", "Description"];
-  const rows = metrics.map(metric => [
+  const rows = metrics.map((metric) => [
     metric.name,
     metric.parameterName,
     metric.measurementUnit,
@@ -350,39 +360,38 @@ function printCustomMetrics(metrics) {
   ]);
 
   const widths = cols.map((c, i) =>
-    Math.max(c.length, ...rows.map(row => String(row[i] ?? "").length), 6)
+    Math.max(c.length, ...rows.map((row) => String(row[i] ?? "").length), 6),
   );
   const pad = (str, n) => String(str ?? "").padEnd(n, " ");
-  const sep = "+" + widths.map(w => "-".repeat(w + 2)).join("+") + "+";
+  const sep = "+" + widths.map((w) => "-".repeat(w + 2)).join("+") + "+";
 
   console.log(sep);
   console.log(
-    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|"
+    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|",
   );
   console.log(sep);
   for (const r of rows) {
     console.log(
-      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|"
+      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|",
     );
   }
   console.log(sep);
 }
-
 
 /* -----------------------------------------------------------------------------
  * Subcommand: reports
  * ---------------------------------------------------------------------------*/
 program
   .command("reports")
-  .description("Run GA4 Data API reports from a JSON spec (everything-as-code)")
+  .description("Run GA4 Data API reports from a JSON spec")
   .requiredOption(
     "-s, --spec <path>",
-    "Path to report spec JSON (defaults to specs/ when relative)"
+    "Path to report spec JSON (defaults to specs/ when relative)",
   )
   .option(
     "-p, --property <propertyId>",
     "GA4 property (e.g., properties/123456789)",
-    process.env.GA4_PROPERTY_ID
+    process.env.GA4_PROPERTY_ID,
   )
   .option("-f, --format <fmt>", "csv|json|ndjson|table", "table")
   .option("-o, --out <path>", "Write output to file instead of stdout")
@@ -398,7 +407,7 @@ program
 
     if (!PROPERTY || !PROPERTY.startsWith("properties/")) {
       console.error(
-        "Missing/invalid GA4 property. Use -p properties/123456789 or set GA4_PROPERTY_ID or put `property` in the spec."
+        "Missing/invalid GA4 property. Use -p properties/123456789 or set GA4_PROPERTY_ID or put `property` in the spec.",
       );
       process.exit(1);
     }
@@ -418,7 +427,7 @@ program
       if (err?.response?.data) {
         console.error(
           "Response data:",
-          JSON.stringify(err.response.data, null, 2)
+          JSON.stringify(err.response.data, null, 2),
         );
       }
       process.exit(1);
@@ -517,19 +526,19 @@ function tablePrint(dimHeaders, metHeaders, rows, maxRows = 50) {
     ]);
 
   const widths = cols.map((c, i) =>
-    Math.max(c.length, ...slice.map((row) => String(row[i] ?? "").length), 6)
+    Math.max(c.length, ...slice.map((row) => String(row[i] ?? "").length), 6),
   );
   const pad = (str, n) => String(str ?? "").padEnd(n, " ");
   const sep = "+" + widths.map((w) => "-".repeat(w + 2)).join("+") + "+";
 
   console.log(sep);
   console.log(
-    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|"
+    "|" + cols.map((c, i) => " " + pad(c, widths[i]) + " ").join("|") + "|",
   );
   console.log(sep);
   for (const r of slice) {
     console.log(
-      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|"
+      "|" + r.map((v, i) => " " + pad(v, widths[i]) + " ").join("|") + "|",
     );
   }
   console.log(sep);
@@ -569,9 +578,9 @@ async function runReportFromSpec({ spec, property, format, outPath }) {
         JSON.stringify(
           { dimensionHeaders: dimHeaders, metricHeaders: metHeaders, rows },
           null,
-          2
+          2,
         ),
-        outPath
+        outPath,
       );
     } else if (format === "ndjson") {
       const dimNames = dimHeaders.map((h) => h.name);
@@ -579,10 +588,10 @@ async function runReportFromSpec({ spec, property, format, outPath }) {
       const lines = rows.map((r) => {
         const obj = {};
         dimNames.forEach(
-          (n, i) => (obj[n] = r.dimensionValues?.[i]?.value ?? null)
+          (n, i) => (obj[n] = r.dimensionValues?.[i]?.value ?? null),
         );
         metNames.forEach(
-          (n, i) => (obj[n] = r.metricValues?.[i]?.value ?? null)
+          (n, i) => (obj[n] = r.metricValues?.[i]?.value ?? null),
         );
         return JSON.stringify(obj);
       });
@@ -610,10 +619,10 @@ async function runReportFromSpec({ spec, property, format, outPath }) {
       const lines = rows.map((r) => {
         const obj = {};
         dimNames.forEach(
-          (n, i) => (obj[n] = r.dimensionValues?.[i]?.value ?? null)
+          (n, i) => (obj[n] = r.dimensionValues?.[i]?.value ?? null),
         );
         metNames.forEach(
-          (n, i) => (obj[n] = r.metricValues?.[i]?.value ?? null)
+          (n, i) => (obj[n] = r.metricValues?.[i]?.value ?? null),
         );
         return JSON.stringify(obj);
       });
@@ -623,7 +632,7 @@ async function runReportFromSpec({ spec, property, format, outPath }) {
     }
   } else {
     throw new Error(
-      `Unknown reportType "${spec.reportType}". Use "standard", "pivot", or "realtime".`
+      `Unknown reportType "${spec.reportType}". Use "standard", "pivot", or "realtime".`,
     );
   }
 }
@@ -634,40 +643,40 @@ async function runReportFromSpec({ spec, property, format, outPath }) {
 program
   .command("bq")
   .description(
-    "Run BigQuery SQL against GA4 export; optionally write results to a table"
+    "Run BigQuery SQL against GA4 export; optionally write results to a table",
   )
   .requiredOption("--project <projectId>", "GCP project that hosts the dataset")
   .requiredOption(
     "--dataset <dataset>",
-    "BigQuery dataset name (e.g., ga4_export)"
+    "BigQuery dataset name (e.g., ga4_export)",
   )
   .option(
     "--sql <path>",
-    "Path to .sql file to run (defaults to sql/ when relative)"
+    "Path to .sql file to run (defaults to sql/ when relative)",
   ) // one of --sql or --query
   .option("--query <text>", "Inline SQL to run") // one of --sql or --query
   .option(
     "--dest <table>",
-    "Destination table name to write results (CREATE TABLE AS SELECT)"
+    "Destination table name to write results (CREATE TABLE AS SELECT)",
   )
   .option("--write <mode>", "append|truncate|empty", "append") // WRITE_APPEND/WRITE_TRUNCATE/WRITE_EMPTY
   .option("--create <mode>", "ifneeded|never", "ifneeded") // CREATE_IF_NEEDED/CREATE_NEVER
   .option("--location <loc>", "Dataset location, e.g. US/EU", "US")
   .option(
     "--from <YYYY-MM-DD>",
-    "Start date to compute _TABLE_SUFFIX (optional)"
+    "Start date to compute _TABLE_SUFFIX (optional)",
   )
   .option("--to <YYYY-MM-DD>", "End date to compute _TABLE_SUFFIX (optional)")
   .option(
     "--include-intraday",
     "Union today's events_intraday_* table if within range",
-    false
+    false,
   )
   .option(
     "--param <k=v...>",
     "Add named parameter (repeatable)",
     collectParams,
-    {}
+    {},
   )
   .option("--dry-run", "Validate & estimate bytes without running", false)
   .action(async (opts) => {
@@ -728,7 +737,7 @@ program
         console.log(
           `✔ Dry run OK. Estimated bytes: ${bytes.toLocaleString()} (${(
             bytes / 1e9
-          ).toFixed(2)} GB)`
+          ).toFixed(2)} GB)`,
         );
         process.exit(0);
       }
@@ -736,7 +745,7 @@ program
       // Execute
       const [job] = await bigquery.createQueryJob(jobOptions);
       console.log(
-        `Job ${job.id} started in ${opts.location}. Waiting for results...`
+        `Job ${job.id} started in ${opts.location}. Waiting for results...`,
       );
       const [rows] = await job.getQueryResults();
 
@@ -746,7 +755,7 @@ program
         console.log(
           `✔ Query finished. Wrote ${totalRows.toLocaleString()} rows to ${
             opts.project
-          }.${opts.dataset}.${opts.dest}`
+          }.${opts.dataset}.${opts.dest}`,
         );
       } else {
         // no destination: print a compact table preview
@@ -756,7 +765,7 @@ program
       // Optional intraday union helper (documented in SQL example below)
       if (opts.includeIntraday) {
         console.log(
-          "Note: include-intraday is a hint for your SQL. Use UNION ALL with events_intraday_* in the query."
+          "Note: include-intraday is a hint for your SQL. Use UNION ALL with events_intraday_* in the query.",
         );
       }
     } catch (err) {
@@ -798,18 +807,20 @@ function printRowsPreview(rows, limit = 50) {
   const keys = Object.keys(rows[0] || {});
   const sample = rows.slice(0, limit);
   const widths = keys.map((k) =>
-    Math.max(k.length, ...sample.map((r) => String(r[k] ?? "").length), 6)
+    Math.max(k.length, ...sample.map((r) => String(r[k] ?? "").length), 6),
   );
   const pad = (s, n) => String(s ?? "").padEnd(n, " ");
   const sep = "+" + widths.map((w) => "-".repeat(w + 2)).join("+") + "+";
   console.log(sep);
   console.log(
-    "|" + keys.map((k, i) => " " + pad(k, widths[i]) + " ").join("|") + "|"
+    "|" + keys.map((k, i) => " " + pad(k, widths[i]) + " ").join("|") + "|",
   );
   console.log(sep);
   for (const r of sample) {
     console.log(
-      "|" + keys.map((k, i) => " " + pad(r[k], widths[i]) + " ").join("|") + "|"
+      "|" +
+        keys.map((k, i) => " " + pad(r[k], widths[i]) + " ").join("|") +
+        "|",
     );
   }
   console.log(sep);

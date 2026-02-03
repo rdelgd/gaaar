@@ -40,3 +40,5 @@ yarn.lock
 # ignore any accidentally added service account keys
 *.p12
 **/keys/**
+
+.references/
