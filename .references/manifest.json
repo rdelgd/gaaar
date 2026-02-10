@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "created_at": "2026-02-10T20:10:58.750Z",
+  "updated_at": "2026-02-10T20:12:19.033Z",
+  "artifacts": [
+    {
+      "id": "91fc7387-85b1-44d0-8ea2-1063ed4431eb",
+      "name": "308676209_funnel",
+      "filename": "308676209_funnel.md",
+      "kind": "note",
+      "mime_type": "text/markdown",
+      "size_bytes": 745,
+      "tags": [],
+      "created_at": "2026-02-10T20:12:19.032Z",
+      "updated_at": "2026-02-10T20:12:19.032Z"
+    },
+    {
+      "id": "af15fa1f-54ae-4eda-a1b6-a2323eb35dab",
+      "name": "funnels",
+      "filename": "funnels.md",
+      "kind": "note",
+      "mime_type": "text/markdown",
+      "size_bytes": 4223,
+      "tags": [],
+      "created_at": "2026-02-10T20:12:19.033Z",
+      "updated_at": "2026-02-10T20:12:19.033Z"
+    }
+  ]
+}
