@@ -16,7 +16,8 @@ Use `.references/` to:
 
 Keep this managed block so `reffy init` can refresh the instructions.
 
-<!-- REFFY:END --><!-- OPENSPEC:START -->
+<!-- REFFY:END -->
+<!-- OPENSPEC:START -->
 # OpenSpec Instructions
 
 These instructions are for AI assistants working in this project.
