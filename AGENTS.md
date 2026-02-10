@@ -1,4 +1,22 @@
-<!-- OPENSPEC:START -->
+
+
+<!-- REFFY:START -->
+# Reffy Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/.references/` when the request:
+- Mentions early-stage ideation, exploration, brainstorming, or raw notes
+- Needs context before drafting specs or proposals
+- Refers to "reffy", "references", "explore", or "context layer"
+
+Use `.references/` to:
+- Store and read exploratory artifacts (canonical source of truth)
+- Optionally connect external systems via separate connector tooling
+
+Keep this managed block so `reffy init` can refresh the instructions.
+
+<!-- REFFY:END --><!-- OPENSPEC:START -->
 # OpenSpec Instructions
 
 These instructions are for AI assistants working in this project.

@@ -24,6 +24,7 @@
     "@google-cloud/bigquery": "^8.1.1",
     "commander": "^14.0.0",
     "dotenv": "^17.2.2",
-    "google-auth-library": "^10.3.0"
+    "google-auth-library": "^10.3.0",
+    "reffy-ts": "github:RoskiDeluge/reffy-ts"
   }
 }
