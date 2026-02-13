@@ -133,6 +133,4 @@ a mix (e.g., page then purchase)
 
 Same mechanics either way—just change what qualifies a step.
 
----
 
-If you tell me your funnel steps (e.g., Start page → PDP → Cart → Checkout → Purchase), I can rewrite your query into a funnel-style query that returns distinct users per step (and optionally sessions), with ordering enforced.
