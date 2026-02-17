@@ -6,9 +6,17 @@ CLI tool to programmatically administer GA4 properties, run custom reports, and 
 
 1. Clone this repository
 2. Install dependencies: `npm install`
-3. Install globally: `npm link`
 
-Now you can use the `gaaar` command from anywhere!
+## Usage Context (important)
+
+Run this CLI from inside the `gaaar` source repository (ideally from the repo root).
+It is intentionally designed to use local repo context such as `config/`, `specs/`,
+`sql/`, and `.env`.
+
+```bash
+# from the repo root
+gaaar <command> [options]
+```
 
 ## Commands
 
