@@ -5,10 +5,10 @@ These instructions are for AI assistants working in this project.
 ## TL;DR Checklist
 
 - Decide whether Reffy ideation is needed for this request.
-- If needed, read existing context in `.references/artifacts/`.
+- If needed, read existing context in `.reffy/artifacts/`.
 - Add/update exploratory artifacts and keep them concise.
 - Run `reffy reindex` and `reffy validate` after artifact changes.
-- After ideation approval, run `reffy summarize --output json` and pick only directly relevant artifacts for proposal citations.
+- Use `reffy summarize --output json` and `reffy plan create` to turn artifact context into planning scaffolds.
 
 ## When To Use Reffy
 
@@ -26,21 +26,24 @@ You can skip Reffy when the request is:
 
 ## Reffy Workflow
 
-1. Read existing artifacts in `.references/artifacts/`.
+1. Read existing artifacts in `.reffy/artifacts/`.
 2. Add or update artifacts to capture exploratory context.
-3. Run `reffy reindex` to index newly added files into `.references/manifest.json`.
+3. Run `reffy reindex` to index newly added files into `.reffy/manifest.json`.
 4. Run `reffy validate` to verify manifest contract compliance.
+5. Run `reffy plan create` to generate proposal/tasks/spec scaffolds from selected artifacts when planning is ready.
 
-## Relationship To OpenSpec
+## Relationship To ReffySpec
 
-- Reffy is the ideation/context layer.
-- OpenSpec is the formal planning/spec layer.
-- After ideation stabilizes, hand off to OpenSpec by following `@/openspec/AGENTS.md`.
-- Do not duplicate full proposal/spec content in Reffy artifacts; summarize and link to OpenSpec outputs.
+- Reffy owns ideation artifacts, manifest metadata, and native planning scaffolds.
+- ReffySpec is the planning subsystem inside Reffy.
+- The vendored fork at `/.vendor/ReffySpec` is reference-only for v1; first-party behavior lives in this repo.
+- Reffy is the primary runtime authority for this project.
+- ReffySpec files live under `.reffy/reffyspec/` as the canonical planning layout.
+- Do not duplicate full proposal/spec content in Reffy artifacts; generate and link planning outputs from them.
 
-## OpenSpec Citation Rules
+## ReffySpec Citation Rules
 
-When an OpenSpec proposal is informed by Reffy artifacts:
+When a ReffySpec proposal is informed by Reffy artifacts:
 - After ideation approval, run `reffy summarize --output json` to shortlist candidate artifacts.
 - Include a short "Reffy References" subsection in `proposal.md` (or design notes if more appropriate).
 - Cite only artifact filenames that directly informed the proposal's problem, scope, decisions, or constraints.
@@ -52,7 +55,7 @@ When an OpenSpec proposal is informed by Reffy artifacts:
 
 ### Reusable Proposal Snippet
 
-Use this in `openspec/changes/<change-id>/proposal.md`:
+Use this in `.reffy/reffyspec/changes/<change-id>/proposal.md`:
 
 ```md
 ## Reffy References
@@ -68,7 +71,7 @@ No Reffy references used.
 
 ## Artifact Conventions
 
-- Treat `.references/` as a repository-local guidance and ideation context layer.
+- Treat `.reffy/` as a repository-local guidance and ideation context layer.
 - Keep artifact names clear and stable.
 - Prefer markdown notes for exploratory content.
 - Keep manifests machine-readable and schema-compliant (version 1).
