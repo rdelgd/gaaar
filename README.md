@@ -140,6 +140,25 @@ WHERE _TABLE_SUFFIX BETWEEN @from_sfx AND @to_sfx
 - `--create ifneeded` (default) - Create table if it doesn't exist
 - `--create never` - Fail if table doesn't exist
 
+### Local Report Server
+
+Serve completed analysis reports over local HTTP for browser-based review.
+
+```bash
+# Serve the default reports directory
+gaaar serve
+
+# Choose host and port
+gaaar serve --host 127.0.0.1 --port 4173
+```
+
+Behavior:
+- serves `reports/` exclusively
+- shows a simple directory index at `/`
+- renders markdown files as HTML
+- serves non-markdown files directly
+- rejects traversal outside the configured root
+
 ### Global Options
 
 ```bash

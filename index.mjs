@@ -3,6 +3,7 @@
 // index.mjs
 import fs from "fs";
 import path from "path";
+import http from "http";
 import { fileURLToPath } from "url";
 
 import { GoogleAuth } from "google-auth-library";
@@ -30,6 +31,64 @@ program
   .name("gaaar")
   .description("GA4 Admin, Report and Query CLI tool")
   .version("0.1.0");
+
+const DEFAULT_REPORTS_DIR = "reports";
+
+/* -----------------------------------------------------------------------------
+ * Subcommand: serve
+ * ---------------------------------------------------------------------------*/
+program
+  .command("serve")
+  .description("Serve completed analysis reports over local HTTP")
+  .option("--port <number>", "Port to listen on", "4173")
+  .option("--host <host>", "Host to bind", "127.0.0.1")
+  .action(async (opts) => {
+    const rootDir = path.resolve(DEFAULT_REPORTS_DIR);
+    const port = Number(opts.port);
+    const host = opts.host || "127.0.0.1";
+
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      console.error(`Invalid port: ${opts.port}`);
+      process.exit(1);
+    }
+
+    try {
+      if (!fs.existsSync(rootDir)) {
+        fs.mkdirSync(rootDir, { recursive: true });
+      }
+
+      const stats = await fs.promises.stat(rootDir).catch(() => null);
+      if (!stats || !stats.isDirectory()) {
+        console.error("Serve root is not a directory:", rootDir);
+        process.exit(1);
+      }
+
+      const server = http.createServer(async (req, res) => {
+        try {
+          await handleServeRequest(req, res, rootDir);
+        } catch (err) {
+          sendHtml(
+            res,
+            500,
+            renderPage("Server Error", `<p>${escapeHtml(err.message || "Unexpected error")}</p>`),
+          );
+        }
+      });
+
+      server.on("error", (err) => {
+        console.error("Server error:", err.message || err);
+        process.exit(1);
+      });
+
+      server.listen(port, host, () => {
+        console.log(`Serving reports from ${rootDir}`);
+        console.log(`Open http://${host}:${port}/`);
+      });
+    } catch (err) {
+      console.error("Error:", err?.message || err);
+      process.exit(1);
+    }
+  });
 
 /* -----------------------------------------------------------------------------
  * Subcommand: admin
@@ -826,6 +885,380 @@ function printRowsPreview(rows, limit = 50) {
   console.log(sep);
   if (rows.length > limit)
     console.log(`(showing ${limit} of ${rows.length} rows)`);
+}
+
+/* -----------------------------------------------------------------------------
+ * Helpers for serve command
+ * ---------------------------------------------------------------------------*/
+async function handleServeRequest(req, res, rootDir) {
+  const pathname = getRequestPathname(req.url || "/");
+  const resolvedPath = resolveServedPath(rootDir, pathname);
+
+  if (!resolvedPath) {
+    sendHtml(
+      res,
+      403,
+      renderPage("Forbidden", "<p>Path escapes the configured serve root.</p>"),
+    );
+    return;
+  }
+
+  let stats;
+  try {
+    stats = await fs.promises.stat(resolvedPath);
+  } catch {
+    sendHtml(
+      res,
+      404,
+      renderPage("Not Found", `<p>No file found for <code>${escapeHtml(pathname)}</code>.</p>`),
+    );
+    return;
+  }
+
+  if (stats.isDirectory()) {
+    const html = await renderDirectoryIndex(rootDir, resolvedPath, pathname);
+    sendHtml(res, 200, html);
+    return;
+  }
+
+  if (path.extname(resolvedPath).toLowerCase() === ".md") {
+    const markdown = await fs.promises.readFile(resolvedPath, "utf8");
+    const html = renderMarkdownDocument(markdown, {
+      title: path.basename(resolvedPath),
+      relativePath: toDisplayPath(rootDir, resolvedPath),
+    });
+    sendHtml(res, 200, html);
+    return;
+  }
+
+  const contentType = guessContentType(resolvedPath);
+  res.writeHead(200, { "Content-Type": contentType });
+  fs.createReadStream(resolvedPath).pipe(res);
+}
+
+function resolveServedPath(rootDir, requestPath) {
+  const safePath = requestPath.startsWith("/") ? requestPath.slice(1) : requestPath;
+  const candidate = path.resolve(rootDir, safePath || ".");
+  const relative = path.relative(rootDir, candidate);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return null;
+  return candidate;
+}
+
+function getRequestPathname(rawUrl) {
+  const pathOnly = rawUrl.split("?")[0].split("#")[0] || "/";
+  return decodeURIComponent(pathOnly);
+}
+
+async function renderDirectoryIndex(rootDir, dirPath, requestPath) {
+  const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+  const sorted = entries.sort((a, b) => {
+    if (a.isDirectory() && !b.isDirectory()) return -1;
+    if (!a.isDirectory() && b.isDirectory()) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const dirUrl = requestPath.endsWith("/") ? requestPath : `${requestPath}/`;
+  const relativeDir = toDisplayPath(rootDir, dirPath);
+  const items = [];
+
+  if (path.resolve(dirPath) !== path.resolve(rootDir)) {
+    const parentPath = toDirectoryUrl(path.posix.dirname(dirUrl.slice(0, -1)) || "/");
+    items.push(`<li><a href="${escapeHtml(parentPath)}">..</a></li>`);
+  }
+
+  for (const entry of sorted) {
+    const href = `${dirUrl === "/" ? "/" : dirUrl}${encodeURIComponent(entry.name)}${entry.isDirectory() ? "/" : ""}`;
+    const label = `${entry.name}${entry.isDirectory() ? "/" : ""}`;
+    items.push(`<li><a href="${escapeHtml(href)}">${escapeHtml(label)}</a></li>`);
+  }
+
+  const body = `
+    <p><strong>Root:</strong> <code>${escapeHtml(rootDir)}</code></p>
+    <p><strong>Current:</strong> <code>${escapeHtml(relativeDir)}</code></p>
+    <ul class="listing">
+      ${items.join("\n")}
+    </ul>
+  `;
+
+  return renderPage("Report Index", body);
+}
+
+function renderMarkdownDocument(markdown, { title, relativePath }) {
+  const body = `
+    <p class="meta"><a href="/">Index</a> / <code>${escapeHtml(relativePath)}</code></p>
+    ${renderMarkdown(markdown)}
+  `;
+  return renderPage(title, body);
+}
+
+function renderMarkdown(markdown) {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const out = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (!line.trim()) {
+      i += 1;
+      continue;
+    }
+
+    if (line.startsWith("```")) {
+      const lang = line.slice(3).trim();
+      i += 1;
+      const codeLines = [];
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i += 1;
+      }
+      if (i < lines.length) i += 1;
+      out.push(
+        `<pre><code class="lang-${escapeHtml(lang || "plain")}">${escapeHtml(codeLines.join("\n"))}</code></pre>`,
+      );
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      out.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      i += 1;
+      continue;
+    }
+
+    if (isMarkdownTable(lines, i)) {
+      const tableLines = [lines[i]];
+      i += 2; // skip header + separator
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i += 1;
+      }
+      out.push(renderMarkdownTable(tableLines));
+      continue;
+    }
+
+    if (/^[-*]\s+/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^[-*]\s+/, ""));
+        i += 1;
+      }
+      out.push(
+        `<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`,
+      );
+      continue;
+    }
+
+    const paragraph = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !lines[i].startsWith("```") &&
+      !lines[i].match(/^(#{1,6})\s+/) &&
+      !/^[-*]\s+/.test(lines[i]) &&
+      !isMarkdownTable(lines, i)
+    ) {
+      paragraph.push(lines[i].trim());
+      i += 1;
+    }
+    out.push(`<p>${renderInlineMarkdown(paragraph.join(" "))}</p>`);
+  }
+
+  return out.join("\n");
+}
+
+function isMarkdownTable(lines, index) {
+  if (index + 1 >= lines.length) return false;
+  return (
+    lines[index].trim().startsWith("|") &&
+    /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/.test(lines[index + 1])
+  );
+}
+
+function renderMarkdownTable(lines) {
+  const rows = lines.map((line) =>
+    line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((cell) => cell.trim()),
+  );
+  const [header, ...body] = rows;
+  return `
+    <table>
+      <thead>
+        <tr>${header.map((cell) => `<th>${renderInlineMarkdown(cell)}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        ${body
+          .map(
+            (row) =>
+              `<tr>${row.map((cell) => `<td>${renderInlineMarkdown(cell)}</td>`).join("")}</tr>`,
+          )
+          .join("\n")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderInlineMarkdown(text) {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+}
+
+function renderPage(title, body) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(title)} · gaaar</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f4ec;
+        --surface: #fffdf8;
+        --border: #d9d2c3;
+        --text: #1e1b16;
+        --muted: #6d6558;
+        --link: #0f6d77;
+        --code-bg: #f1ece0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 Georgia, "Times New Roman", serif;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
+      article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px 24px;
+        box-shadow: 0 10px 30px rgba(64, 44, 14, 0.08);
+      }
+      h1, h2, h3, h4, h5, h6 {
+        line-height: 1.2;
+        margin: 1.2em 0 0.6em;
+      }
+      h1 { margin-top: 0; font-size: 2rem; }
+      p, ul { margin: 0 0 1rem; }
+      ul { padding-left: 1.25rem; }
+      a { color: var(--link); }
+      code, pre {
+        font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      }
+      code {
+        background: var(--code-bg);
+        border-radius: 6px;
+        padding: 0.1rem 0.35rem;
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow-x: auto;
+        padding: 14px 16px;
+        margin: 0 0 1rem;
+      }
+      pre code {
+        background: transparent;
+        padding: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 1rem;
+        font-size: 0.95rem;
+      }
+      th, td {
+        border: 1px solid var(--border);
+        padding: 0.55rem 0.65rem;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #efe8d8;
+      }
+      .meta {
+        color: var(--muted);
+        margin-bottom: 1.5rem;
+      }
+      .listing {
+        list-style: none;
+        padding-left: 0;
+      }
+      .listing li {
+        margin: 0 0 0.45rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <article>
+        ${body}
+      </article>
+    </main>
+  </body>
+</html>`;
+}
+
+function sendHtml(res, statusCode, html) {
+  res.writeHead(statusCode, { "Content-Type": "text/html; charset=utf-8" });
+  res.end(html);
+}
+
+function guessContentType(filePath) {
+  switch (path.extname(filePath).toLowerCase()) {
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".csv":
+      return "text/csv; charset=utf-8";
+    case ".txt":
+    case ".log":
+    case ".sql":
+    case ".md":
+      return "text/plain; charset=utf-8";
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".svg":
+      return "image/svg+xml";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function toDisplayPath(rootDir, targetPath) {
+  const relative = path.relative(rootDir, targetPath) || ".";
+  return relative.split(path.sep).join("/");
+}
+
+function toDirectoryUrl(dirPath) {
+  const normalized = dirPath === "." ? "/" : dirPath;
+  return normalized.endsWith("/") ? normalized : `${normalized}/`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /* -----------------------------------------------------------------------------
