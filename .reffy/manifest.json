@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "2026-02-10T20:10:58.750Z",
-  "updated_at": "2026-06-17T00:13:04.130Z",
+  "updated_at": "2026-06-17T01:04:39.733Z",
   "project_id": "gaaar",
   "workspace_ids": [
     "gaaar"
@@ -38,15 +38,15 @@
       "size_bytes": 7621,
       "tags": [],
       "created_at": "2026-05-14T20:16:49.575Z",
-      "updated_at": "2026-06-17T00:13:04.130Z",
+      "updated_at": "2026-06-17T01:04:39.733Z",
       "related_changes": [
         "add-th-giveaway-funnel-report"
       ],
       "derived_outputs": [
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/proposal.md",
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/tasks.md",
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/design.md",
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/specs/th-giveaway-funnel-report/spec.md"
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/proposal.md",
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/tasks.md",
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/design.md",
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/specs/th-giveaway-funnel-report/spec.md"
       ]
     },
     {
@@ -58,15 +58,15 @@
       "size_bytes": 639,
       "tags": [],
       "created_at": "2026-06-17T00:09:53.550Z",
-      "updated_at": "2026-06-17T00:13:04.130Z",
+      "updated_at": "2026-06-17T01:04:39.733Z",
       "related_changes": [
         "add-th-giveaway-funnel-report"
       ],
       "derived_outputs": [
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/proposal.md",
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/tasks.md",
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/design.md",
-        ".reffy/reffyspec/changes/add-th-giveaway-funnel-report/specs/th-giveaway-funnel-report/spec.md"
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/proposal.md",
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/tasks.md",
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/design.md",
+        ".reffy/reffyspec/changes/archive/2026-06-17-add-th-giveaway-funnel-report/specs/th-giveaway-funnel-report/spec.md"
       ]
     }
   ]
