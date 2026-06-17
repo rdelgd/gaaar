@@ -15,6 +15,8 @@ Use `@/.reffy/AGENTS.md` to learn:
 - How Reffy owns the runtime while preserving ReffySpec planning files
 - How to store and consume ideation context in `.reffy/`
 
+Before performing a Reffy workflow, check `.reffy/skills/` (or run `reffy skill list`) and follow the matching skill.
+
 Keep this managed block so `reffy init` can refresh the instructions.
 
 <!-- REFFY:END -->

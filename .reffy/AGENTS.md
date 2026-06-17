@@ -9,6 +9,7 @@ These instructions are for AI assistants working in this project.
 - Add/update exploratory artifacts and keep them concise.
 - Run `reffy reindex` and `reffy validate` after artifact changes.
 - Use `reffy summarize --output json` and `reffy plan create` to turn artifact context into planning scaffolds.
+- Before performing a Reffy workflow, check `.reffy/skills/` (or run `reffy skill list`) and follow the matching skill.
 
 ## When To Use Reffy
 
