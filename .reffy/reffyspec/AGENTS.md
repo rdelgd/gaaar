@@ -37,6 +37,12 @@ These instructions are for AI assistants working in this project.
 - Delta specs must use `## ADDED|MODIFIED|REMOVED|RENAMED Requirements`.
 - Each requirement must include at least one `#### Scenario:`.
 
+## Representing Pivots
+
+- A pivot, deprecation, or wind-down is not a special object — it is an ordinary change whose delta is mostly `REMOVED`/`MODIFIED` requirements.
+- Never edit or delete an archived change to reverse direction; land a new change on top. The archive is an append-only ledger and canonical `specs/` always reflects current truth.
+- When a change reverses or replaces the direction of a prior one, name the prior change-id(s) in a `## Supersedes` section of `proposal.md`. This is a navigational pointer; the spec delta remains the authoritative record of what changed.
+
 ## Reffy Relationship
 
 - Reffy owns the runtime and artifact workflow.
